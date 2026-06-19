@@ -1,5 +1,5 @@
 import { MockScanner } from './mock'
-import { ClaudeScanner } from './claude'
+import { TesseractScanner } from './tesseract'
 import type { ReceiptScanner } from './types'
 
 export type { ReceiptScanner, ScannedReceipt, ScannedItem } from './types'
@@ -8,7 +8,7 @@ export type { ReceiptScanner, ScannedReceipt, ScannedItem } from './types'
 // Add a provider = add a file + one entry here.
 const registry: Record<string, () => ReceiptScanner> = {
   mock: () => new MockScanner(),
-  claude: () => new ClaudeScanner(),
+  tesseract: () => new TesseractScanner(),
 }
 
 let cached: ReceiptScanner | undefined

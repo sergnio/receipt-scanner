@@ -1,4 +1,4 @@
-# Receipt Tracker
+# Receipt Scanner
 
 Snap a photo of a receipt, OCR the items + prices, and track prices over time per
 product and vendor.
@@ -22,8 +22,10 @@ pnpm dev                  # http://localhost:3000
 ```
 
 The `mock` scanner returns canned receipt data so you can use the whole app
-without any API keys. Set `SCANNER=claude` and `ANTHROPIC_API_KEY=...` to use
-real OCR.
+without any setup. Set `SCANNER=tesseract` to run real OCR locally with
+[Tesseract.js](https://github.com/naptha/tesseract.js) — no API keys, no cost.
+Tesseract returns raw text, which `tesseract.ts` parses heuristically into
+items/prices; you confirm/correct the result in the review screen before saving.
 
 ## Swappable scanner
 
@@ -32,7 +34,7 @@ only ever touches `getScanner()` / the `ReceiptScanner` contract.
 
 - `src/lib/scanner/types.ts` — the `ReceiptScanner` interface + zod schema
 - `src/lib/scanner/mock.ts` — canned data, zero deps
-- `src/lib/scanner/claude.ts` — Claude vision implementation
+- `src/lib/scanner/tesseract.ts` — local Tesseract.js OCR + heuristic parser
 - `src/lib/scanner/index.ts` — the registry; selected by the `SCANNER` env var
 
 Add a provider = add one file implementing `ReceiptScanner` + one entry in the

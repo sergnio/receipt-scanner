@@ -1,5 +1,5 @@
 {
-  "name": "receipt-tracker",
+  "name": "receipt-scanner",
   "private": true,
   "sideEffects": false,
   "type": "module",
@@ -13,7 +13,6 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.32.1",
     "@libsql/client": "^0.14.0",
     "@tanstack/react-form": "^0.41.0",
     "@tanstack/react-query": "^5.66.0",
@@ -26,6 +25,7 @@
     "drizzle-orm": "^0.38.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "tesseract.js": "^5.1.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
