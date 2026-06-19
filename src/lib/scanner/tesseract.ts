@@ -19,16 +19,115 @@ export class TesseractScanner implements ReceiptScanner {
   }
 
   async scan({ image }: ScanInput): Promise<ScannedReceipt> {
-    const worker = await createWorker(this.lang)
+    console.log('[tesseract] init worker', { lang: this.lang })
+    const tInit = performance.now()
+    const worker = await createWorker(this.lang, undefined, {
+      logger: (m) => console.log('[tesseract]', m),
+    })
+    console.log('[tesseract] worker ready', {
+      ms: Math.round(performance.now() - tInit),
+    })
     try {
+      const tPrep = performance.now()
+      const prepared = await prepareImage(image)
+      console.log('[tesseract] image prepared', {
+        ms: Math.round(performance.now() - tPrep),
+        sizeKB: Math.round(prepared.size / 1024),
+      })
+      const tRec = performance.now()
       const {
         data: { text },
-      } = await worker.recognize(image)
-      return parseReceiptText(text)
+      } = await worker.recognize(prepared)
+      console.log('[tesseract] recognize done', {
+        ms: Math.round(performance.now() - tRec),
+        chars: text.length,
+        lines: text.split('\n').filter((l) => l.trim()).length,
+      })
+      const parsed = parseReceiptText(text)
+      console.log('[tesseract] parsed', {
+        vendor: parsed.vendor,
+        purchasedAt: parsed.purchasedAt,
+        total: parsed.total,
+        items: parsed.items.length,
+      })
+      return parsed
+    } catch (err) {
+      console.error('[tesseract] recognize failed', err)
+      throw err
     } finally {
       await worker.terminate()
     }
   }
+}
+
+// Tesseract decodes via the browser's canvas, which can't read HEIC (the
+// default iPhone photo format) in Chrome, and chokes on very large photos.
+// Decode the image ourselves, downscale, and re-encode to PNG so OCR always
+// gets a format it can read. The <img> fallback lets Safari decode HEIC.
+const MAX_DIM = 2000
+
+async function prepareImage(file: Blob): Promise<Blob> {
+  const { source, width, height, cleanup } = await decode(file)
+  try {
+    const scale = Math.min(1, MAX_DIM / Math.max(width, height))
+    const w = Math.max(1, Math.round(width * scale))
+    const h = Math.max(1, Math.round(height * scale))
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Could not get a 2D canvas context.')
+    ctx.drawImage(source, 0, 0, w, h)
+    return await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('Failed to encode image.'))),
+        'image/png',
+      ),
+    )
+  } finally {
+    cleanup()
+  }
+}
+
+async function decode(
+  file: Blob,
+): Promise<{ source: CanvasImageSource; width: number; height: number; cleanup: () => void }> {
+  try {
+    const bitmap = await createImageBitmap(file)
+    return {
+      source: bitmap,
+      width: bitmap.width,
+      height: bitmap.height,
+      cleanup: () => bitmap.close(),
+    }
+  } catch {
+    // createImageBitmap can't decode HEIC in Chrome; an <img> element uses the
+    // browser's full image pipeline (Safari decodes HEIC this way).
+    const url = URL.createObjectURL(file)
+    try {
+      const img = await loadImage(url)
+      return {
+        source: img,
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+        cleanup: () => URL.revokeObjectURL(url),
+      }
+    } catch {
+      URL.revokeObjectURL(url)
+      throw new Error(
+        "Couldn't read that image. Try a JPG or PNG — HEIC photos aren't supported in this browser.",
+      )
+    }
+  }
+}
+
+function loadImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error('decode failed'))
+    img.src = url
+  })
 }
 
 const PRICE_RE = /(-?\d{1,4}[.,]\d{2})(?:\s*[A-Z]{1,2})?\s*$/

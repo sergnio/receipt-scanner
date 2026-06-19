@@ -20,3 +20,5 @@ yarn.lock
 *.db-journal
 local.db
 drizzle/.cache
+
+.idea

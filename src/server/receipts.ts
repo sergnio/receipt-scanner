@@ -21,35 +21,70 @@ const saveInputSchema = scannedReceiptSchema.extend({
 })
 
 export const saveReceipt = createServerFn({ method: 'POST' })
-  .validator((d: unknown) => saveInputSchema.parse(d))
-  .handler(async ({ data }) => {
-    const vendorId = data.vendor ? await upsertVendor(data.vendor) : null
-
-    const [receipt] = await db
-      .insert(receipts)
-      .values({
-        vendorId,
-        purchasedAt: data.purchasedAt ? new Date(data.purchasedAt) : new Date(),
-        currency: data.currency,
-        total: data.total,
-      })
-      .returning()
-
-    for (const item of data.items) {
-      const productId = await matchOrCreateProduct(item.normalizedName, item.unit)
-      await db.insert(lineItems).values({
-        receiptId: receipt.id,
-        productId,
-        rawName: item.rawName,
-        qty: item.qty,
-        unit: item.unit,
-        unitPrice: item.unitPrice,
-        totalPrice: item.totalPrice,
-        weightGrams: item.weightGrams ?? null,
-      })
+  .validator((d: unknown) => {
+    try {
+      return saveInputSchema.parse(d)
+    } catch (err) {
+      console.error('[saveReceipt] validation failed', err)
+      throw err
     }
+  })
+  .handler(async ({ data }) => {
+    const t0 = Date.now()
+    console.log('[saveReceipt] start', {
+      vendor: data.vendor,
+      items: data.items.length,
+      total: data.total,
+      currency: data.currency,
+      purchasedAt: data.purchasedAt,
+    })
+    try {
+      const vendorId = data.vendor ? await upsertVendor(data.vendor) : null
+      console.log('[saveReceipt] vendor resolved', { vendorId })
 
-    return { receiptId: receipt.id }
+      const [receipt] = await db
+        .insert(receipts)
+        .values({
+          vendorId,
+          purchasedAt: data.purchasedAt ? new Date(data.purchasedAt) : new Date(),
+          currency: data.currency,
+          total: data.total,
+        })
+        .returning()
+      console.log('[saveReceipt] receipt inserted', { receiptId: receipt.id })
+
+      for (const [i, item] of data.items.entries()) {
+        try {
+          const productId = await matchOrCreateProduct(item.normalizedName, item.unit)
+          await db.insert(lineItems).values({
+            receiptId: receipt.id,
+            productId,
+            rawName: item.rawName,
+            qty: item.qty,
+            unit: item.unit,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+            weightGrams: item.weightGrams ?? null,
+          })
+        } catch (err) {
+          console.error('[saveReceipt] line item insert failed', {
+            index: i,
+            item,
+            err,
+          })
+          throw err
+        }
+      }
+
+      console.log('[saveReceipt] ok', {
+        receiptId: receipt.id,
+        ms: Date.now() - t0,
+      })
+      return { receiptId: receipt.id }
+    } catch (err) {
+      console.error('[saveReceipt] failed', { ms: Date.now() - t0, err })
+      throw err
+    }
   })
 
 async function upsertVendor(name: string): Promise<number> {
