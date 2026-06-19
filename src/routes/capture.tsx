@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
-import { scanReceipt, saveReceipt } from '~/server/receipts'
+import { saveReceipt } from '~/server/receipts'
 import type { ScannedReceipt } from '~/lib/scanner'
 import { ReviewForm } from '~/components/ReviewForm'
 
@@ -9,26 +9,16 @@ export const Route = createFileRoute('/capture')({
   component: Capture,
 })
 
-function fileToBase64(file: File): Promise<{ base64: string; mimeType: string }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result as string
-      resolve({ base64: result.split(',')[1] ?? '', mimeType: file.type })
-    }
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
-}
-
 function Capture() {
   const navigate = useNavigate()
   const [scanned, setScanned] = React.useState<ScannedReceipt | null>(null)
 
+  // OCR happens here, in the browser — no image ever leaves the device.
+  // Dynamic import keeps the scanner (and Tesseract.js) out of the SSR bundle.
   const scan = useMutation({
     mutationFn: async (file: File) => {
-      const { base64, mimeType } = await fileToBase64(file)
-      return scanReceipt({ data: { base64, mimeType } })
+      const { getScanner } = await import('~/lib/scanner')
+      return getScanner().scan({ image: file })
     },
     onSuccess: setScanned,
   })

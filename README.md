@@ -16,29 +16,32 @@ Built on the TanStack ecosystem:
 
 ```bash
 pnpm install
-cp .env.example .env      # SCANNER defaults to "mock" — no API key needed
+cp .env.example .env      # VITE_SCANNER defaults to "tesseract"
 pnpm db:push              # create tables in local.db
 pnpm dev                  # http://localhost:3000
 ```
 
-The `mock` scanner returns canned receipt data so you can use the whole app
-without any setup. Set `SCANNER=tesseract` to run real OCR locally with
-[Tesseract.js](https://github.com/naptha/tesseract.js) — no API keys, no cost.
-Tesseract returns raw text, which `tesseract.ts` parses heuristically into
-items/prices; you confirm/correct the result in the review screen before saving.
+OCR runs **in the browser** with
+[Tesseract.js](https://github.com/naptha/tesseract.js) — no API keys, no cost,
+and the image never leaves the device. Tesseract returns raw text, which
+`tesseract.ts` parses heuristically into items/prices; you confirm/correct the
+result in the review screen before saving. Set `VITE_SCANNER=mock` to use canned
+data instead (handy for working on the UI).
 
-## Swappable scanner
+## Swappable scanner (client-side)
 
 The OCR provider is fully isolated behind one interface. The rest of the app
-only ever touches `getScanner()` / the `ReceiptScanner` contract.
+only ever touches `getScanner()` / the `ReceiptScanner` contract, and it all runs
+client-side.
 
 - `src/lib/scanner/types.ts` — the `ReceiptScanner` interface + zod schema
 - `src/lib/scanner/mock.ts` — canned data, zero deps
-- `src/lib/scanner/tesseract.ts` — local Tesseract.js OCR + heuristic parser
-- `src/lib/scanner/index.ts` — the registry; selected by the `SCANNER` env var
+- `src/lib/scanner/tesseract.ts` — in-browser Tesseract.js OCR + heuristic parser
+- `src/lib/scanner/index.ts` — the registry; selected by `VITE_SCANNER`
 
 Add a provider = add one file implementing `ReceiptScanner` + one entry in the
-registry. Receipt images are sent to the scanner and **never persisted**.
+registry. The only server-side work is persisting the reviewed result (Turso
+writes need the auth token); the receipt image is never uploaded.
 
 ## Data model
 
@@ -49,21 +52,15 @@ swap in fuzzy/LLM matching later without touching callers.
 
 ## Deploy (Netlify + Turso)
 
-OCR runs server-side in the SSR function via `@netlify/vite-plugin-tanstack-start`
-(wired into `vite.config.ts`; build output goes to `dist/client` + a Netlify
-function — see `netlify.toml`).
+The SSR function (built via `@netlify/vite-plugin-tanstack-start`, wired into
+`vite.config.ts`) only handles data persistence — OCR is client-side, so the
+function stays small. Build output goes to `dist/client` + a Netlify function;
+see `netlify.toml`.
 
 1. Create a Turso database and grab its URL + auth token.
-2. In the Netlify dashboard set env vars: `SCANNER=tesseract`,
+2. In the Netlify dashboard set env vars: `VITE_SCANNER=tesseract`,
    `DATABASE_URL=libsql://...`, `DATABASE_AUTH_TOKEN=...`.
 3. Apply the schema to Turso once: `DATABASE_URL=... DATABASE_AUTH_TOKEN=... pnpm db:migrate`.
 4. Connect the repo in Netlify (build command `pnpm build`, publish `dist/client`),
    or deploy with the Netlify CLI (`netlify deploy`, requires netlify-cli ≥ 17.31).
-
-> **Caveat — Tesseract in serverless:** `tesseract.js` loads a wasm core and
-> language data at runtime and uses worker threads, which is heavy/fragile inside
-> Netlify Functions (cold starts, bundle size). For production, prefer running the
-> OCR in the **browser** (Tesseract.js runs great client-side) and only sending the
-> already-structured result to the server. The `ReceiptScanner` interface is the
-> seam that makes that move cheap.
 # receipt-scanner

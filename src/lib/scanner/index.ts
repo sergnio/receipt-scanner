@@ -15,7 +15,7 @@ let cached: ReceiptScanner | undefined
 
 export function getScanner(): ReceiptScanner {
   if (cached) return cached
-  const key = process.env.SCANNER ?? 'mock'
+  const key = import.meta.env.VITE_SCANNER ?? 'tesseract'
   const factory = registry[key]
   if (!factory) {
     throw new Error(

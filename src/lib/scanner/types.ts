@@ -23,9 +23,9 @@ export const scannedReceiptSchema = z.object({
 export type ScannedItem = z.infer<typeof scannedItemSchema>
 export type ScannedReceipt = z.infer<typeof scannedReceiptSchema>
 
+// Scanners run in the browser, so they take a Blob/File directly.
 export interface ScanInput {
-  image: Buffer
-  mimeType: string
+  image: Blob
 }
 
 export interface ReceiptScanner {

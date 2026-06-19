@@ -4,24 +4,11 @@ import { and, desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '~/db/client'
 import { lineItems, products, receipts, vendors } from '~/db/schema'
-import { getScanner } from '~/lib/scanner'
 import { scannedReceiptSchema } from '~/lib/scanner/types'
 import { normalizeKey } from '~/lib/normalize'
 
-// --- Scan: image in, structured data out. The image is NEVER persisted. ---
-
-const scanInputSchema = z.object({
-  base64: z.string(),
-  mimeType: z.string(),
-})
-
-export const scanReceipt = createServerFn({ method: 'POST' })
-  .validator((d: unknown) => scanInputSchema.parse(d))
-  .handler(async ({ data }) => {
-    const image = Buffer.from(data.base64, 'base64')
-    const scanner = getScanner()
-    return scanner.scan({ image, mimeType: data.mimeType })
-  })
+// OCR runs entirely client-side (see src/lib/scanner). The server only persists
+// the reviewed result, because Turso writes need the auth token.
 
 // --- Save: reviewed/corrected receipt -> vendor + products + line items ---
 

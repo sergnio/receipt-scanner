@@ -2,8 +2,8 @@
 command = "pnpm build"
 publish = "dist/client"
 
-# Set these in the Netlify dashboard (Site settings > Environment variables),
-# not here, since they contain secrets:
-#   SCANNER              = tesseract        # or "mock"
+# Set these in the Netlify dashboard (Site settings > Environment variables).
+# OCR runs in the browser, so the only server-side secrets are the DB ones:
+#   VITE_SCANNER         = tesseract        # or "mock" (build-time, client)
 #   DATABASE_URL         = libsql://<db>-<org>.turso.io
 #   DATABASE_AUTH_TOKEN  = <turso token>

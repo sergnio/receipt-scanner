@@ -6,10 +6,10 @@ import type {
   ScannedReceipt,
 } from './types'
 
-// Tesseract gives us raw OCR text only — no structure. So this scanner runs
-// OCR and then applies heuristics to pull out vendor / date / line items.
-// It is best-effort by design: the user reviews & corrects in the UI before
-// saving. Swap to a smarter provider later without touching any caller.
+// Runs entirely in the browser. Tesseract gives us raw OCR text only — no
+// structure — so this scanner runs OCR and then applies heuristics to pull out
+// vendor / date / line items. It is best-effort by design: the user reviews &
+// corrects in the UI before saving. Swap providers without touching any caller.
 export class TesseractScanner implements ReceiptScanner {
   readonly name = 'tesseract'
   private lang: string
