@@ -1,0 +1,22 @@
+node_modules
+package-lock.json
+yarn.lock
+
+.DS_Store
+.cache
+.env
+.env.*
+!.env.example
+.vercel
+.netlify
+.output
+/dist/
+/build/
+/server/build
+/public/build
+
+# local sqlite
+*.db
+*.db-journal
+local.db
+drizzle/.cache
