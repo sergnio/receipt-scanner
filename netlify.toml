@@ -1,0 +1,9 @@
+[build]
+command = "pnpm build"
+publish = "dist/client"
+
+# Set these in the Netlify dashboard (Site settings > Environment variables),
+# not here, since they contain secrets:
+#   SCANNER              = tesseract        # or "mock"
+#   DATABASE_URL         = libsql://<db>-<org>.turso.io
+#   DATABASE_AUTH_TOKEN  = <turso token>

@@ -2,6 +2,7 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import { defineConfig } from 'vite'
 import tsConfigPaths from 'vite-tsconfig-paths'
 import { VitePWA } from 'vite-plugin-pwa'
+import netlify from '@netlify/vite-plugin-tanstack-start'
 
 export default defineConfig({
   server: {
@@ -15,7 +16,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Receipt Tracker',
+        name: 'Receipt Scanner',
         short_name: 'Receipts',
         description: 'Scan receipts and track prices over time',
         theme_color: '#0f172a',
@@ -28,5 +29,6 @@ export default defineConfig({
         ],
       },
     }),
+    netlify(),
   ],
 })

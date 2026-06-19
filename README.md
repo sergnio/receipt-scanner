@@ -47,8 +47,23 @@ receipts point at one `product`, so price-over-time is a single join. Product
 matching is exact-match on a normalized name for now (`src/lib/normalize.ts`) —
 swap in fuzzy/LLM matching later without touching callers.
 
-## Deploy
+## Deploy (Netlify + Turso)
 
-TanStack's recommended path: **Netlify + Turso**. Set `DATABASE_URL` /
-`DATABASE_AUTH_TOKEN` to your Turso DB and run `pnpm db:migrate`.
+OCR runs server-side in the SSR function via `@netlify/vite-plugin-tanstack-start`
+(wired into `vite.config.ts`; build output goes to `dist/client` + a Netlify
+function — see `netlify.toml`).
+
+1. Create a Turso database and grab its URL + auth token.
+2. In the Netlify dashboard set env vars: `SCANNER=tesseract`,
+   `DATABASE_URL=libsql://...`, `DATABASE_AUTH_TOKEN=...`.
+3. Apply the schema to Turso once: `DATABASE_URL=... DATABASE_AUTH_TOKEN=... pnpm db:migrate`.
+4. Connect the repo in Netlify (build command `pnpm build`, publish `dist/client`),
+   or deploy with the Netlify CLI (`netlify deploy`, requires netlify-cli ≥ 17.31).
+
+> **Caveat — Tesseract in serverless:** `tesseract.js` loads a wasm core and
+> language data at runtime and uses worker threads, which is heavy/fragile inside
+> Netlify Functions (cold starts, bundle size). For production, prefer running the
+> OCR in the **browser** (Tesseract.js runs great client-side) and only sending the
+> already-structured result to the server. The `ReceiptScanner` interface is the
+> seam that makes that move cheap.
 # receipt-scanner
