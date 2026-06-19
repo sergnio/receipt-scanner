@@ -49,3 +49,4 @@ swap in fuzzy/LLM matching later without touching callers.
 
 TanStack's recommended path: **Netlify + Turso**. Set `DATABASE_URL` /
 `DATABASE_AUTH_TOKEN` to your Turso DB and run `pnpm db:migrate`.
+# receipt-scanner
