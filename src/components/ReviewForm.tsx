@@ -12,6 +12,16 @@ function num(v: string): number | null {
   return Number.isFinite(n) ? n : null
 }
 
+const EMPTY_ITEM: ReviewItem = {
+  rawName: '',
+  normalizedName: '',
+  qty: null,
+  unit: null,
+  unitPrice: null,
+  totalPrice: null,
+  weightGrams: null,
+}
+
 export function ReviewForm({
   initial,
   saving,
@@ -84,6 +94,7 @@ export function ReviewForm({
                 <th>Unit $</th>
                 <th>Total $</th>
                 <th>Weight (g)</th>
+                <th aria-label="Remove" />
               </tr>
             </thead>
             <tbody>
@@ -155,9 +166,30 @@ export function ReviewForm({
                       )}
                     </form.Field>
                   </td>
+                  <td>
+                    <button
+                      type="button"
+                      aria-label={`Remove item ${i + 1}`}
+                      onClick={() => itemsField.removeValue(i)}
+                    >
+                      ✕
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={7}>
+                  <button
+                    type="button"
+                    onClick={() => itemsField.pushValue({ ...EMPTY_ITEM })}
+                  >
+                    + Add item
+                  </button>
+                </td>
+              </tr>
+            </tfoot>
           </table>
         )}
       </form.Field>
