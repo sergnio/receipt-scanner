@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as CaptureRouteImport } from './routes/capture'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ReceiptsIndexRouteImport } from './routes/receipts.index'
@@ -16,6 +17,11 @@ import { Route as ProductsIndexRouteImport } from './routes/products.index'
 import { Route as ReceiptsReceiptIdRouteImport } from './routes/receipts.$receiptId'
 import { Route as ProductsProductIdRouteImport } from './routes/products.$productId'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CaptureRoute = CaptureRouteImport.update({
   id: '/capture',
   path: '/capture',
@@ -50,6 +56,7 @@ const ProductsProductIdRoute = ProductsProductIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/capture': typeof CaptureRoute
+  '/login': typeof LoginRoute
   '/products/$productId': typeof ProductsProductIdRoute
   '/receipts/$receiptId': typeof ReceiptsReceiptIdRoute
   '/products/': typeof ProductsIndexRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/capture': typeof CaptureRoute
+  '/login': typeof LoginRoute
   '/products/$productId': typeof ProductsProductIdRoute
   '/receipts/$receiptId': typeof ReceiptsReceiptIdRoute
   '/products': typeof ProductsIndexRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/capture': typeof CaptureRoute
+  '/login': typeof LoginRoute
   '/products/$productId': typeof ProductsProductIdRoute
   '/receipts/$receiptId': typeof ReceiptsReceiptIdRoute
   '/products/': typeof ProductsIndexRoute
@@ -77,6 +86,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/capture'
+    | '/login'
     | '/products/$productId'
     | '/receipts/$receiptId'
     | '/products/'
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/capture'
+    | '/login'
     | '/products/$productId'
     | '/receipts/$receiptId'
     | '/products'
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/capture'
+    | '/login'
     | '/products/$productId'
     | '/receipts/$receiptId'
     | '/products/'
@@ -102,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CaptureRoute: typeof CaptureRoute
+  LoginRoute: typeof LoginRoute
   ProductsProductIdRoute: typeof ProductsProductIdRoute
   ReceiptsReceiptIdRoute: typeof ReceiptsReceiptIdRoute
   ProductsIndexRoute: typeof ProductsIndexRoute
@@ -110,6 +123,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/capture': {
       id: '/capture'
       path: '/capture'
@@ -158,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CaptureRoute: CaptureRoute,
+  LoginRoute: LoginRoute,
   ProductsProductIdRoute: ProductsProductIdRoute,
   ReceiptsReceiptIdRoute: ReceiptsReceiptIdRoute,
   ProductsIndexRoute: ProductsIndexRoute,

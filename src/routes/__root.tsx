@@ -5,6 +5,8 @@ import {
   Outlet,
   Scripts,
   createRootRouteWithContext,
+  redirect,
+  useRouter,
 } from '@tanstack/react-router'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
@@ -12,12 +14,20 @@ import * as React from 'react'
 import type { QueryClient } from '@tanstack/react-query'
 import { DefaultCatchBoundary } from '~/components/DefaultCatchBoundary'
 import { NotFound } from '~/components/NotFound'
+import { getAuth, logout } from '~/server/auth'
 import appCss from '~/styles/app.css?url'
 import { seo } from '~/utils/seo'
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
 }>()({
+  beforeLoad: async ({ location }) => {
+    const { authed } = await getAuth()
+    if (!authed && location.pathname !== '/login') {
+      throw redirect({ to: '/login' })
+    }
+    return { authed }
+  },
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
@@ -47,8 +57,9 @@ export const Route = createRootRouteWithContext<{
 })
 
 function RootComponent() {
+  const { authed } = Route.useRouteContext()
   return (
-    <RootDocument>
+    <RootDocument authed={authed}>
       <Outlet />
     </RootDocument>
   )
@@ -66,7 +77,33 @@ function NavLink({ to, label }: { to: string; label: string }) {
   )
 }
 
-function RootDocument({ children }: { children: React.ReactNode }) {
+function LogoutButton() {
+  const router = useRouter()
+  const [busy, setBusy] = React.useState(false)
+  return (
+    <button
+      type="button"
+      className="link-button"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true)
+        await logout()
+        await router.invalidate()
+        router.navigate({ to: '/login' })
+      }}
+    >
+      Log out
+    </button>
+  )
+}
+
+function RootDocument({
+  children,
+  authed = false,
+}: {
+  children: React.ReactNode
+  authed?: boolean
+}) {
   return (
     <html lang="en">
       <head>
@@ -75,12 +112,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         <header className="app-header">
           <span className="brand">Receipt Tracker</span>
-          <nav className="app-nav">
-            <NavLink to="/" label="Home" />
-            <NavLink to="/capture" label="Scan" />
-            <NavLink to="/receipts" label="Receipts" />
-            <NavLink to="/products" label="Products" />
-          </nav>
+          {authed && (
+            <nav className="app-nav">
+              <NavLink to="/" label="Home" />
+              <NavLink to="/capture" label="Scan" />
+              <NavLink to="/receipts" label="Receipts" />
+              <NavLink to="/products" label="Products" />
+              <LogoutButton />
+            </nav>
+          )}
         </header>
         <main className="app-main">{children}</main>
         <TanStackRouterDevtools position="bottom-right" />
